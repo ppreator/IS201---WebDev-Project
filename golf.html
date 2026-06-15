@@ -1,0 +1,127 @@
+<!-- Peyton Preator
+ IS 201 WebDev Final Project - Scratch Page
+ 6/13/2026-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Love for Golf</title>
+    <link rel="stylesheet" href="golfstyles.css">
+</head>
+<body>
+
+    <div class="header">
+        <h1>My Love for Golf</h1>
+        <nav>
+            <a href="#intro">Introduction</a> |
+            <a href="#gear">My Gear & Goals</a> |
+            <a href="puttingpractice.html" target="_blank">Game</a> |
+            <a href="#video">Watch</a> |
+            <a href="#viz">Stats</a>
+        </nav>
+    </div>
+
+    <div class="content">
+
+        <h2 id="intro">Why I Love Golf</h2>
+        <p>
+            Golf has been one of my favorite ways to spend time outdoors, whether I'm playing with my dad or
+            just working on my own game at the local course. It's a sport that takes patience, focus, and a
+            lot of practice — but the moment you hit a perfect shot, it's worth every frustrating swing before it.
+        </p>
+        <!-- Image of me and my dad golfing -->
+        <img src="images/dad_and_i_golfing.jpeg" alt="My dad and me golfing together" width="350">
+
+        <h2 id="gear">My Gear & Goals</h2>
+        <ol>
+            <li>Clubs I currently play with
+                <ul>
+                    <li>Callaway Edge driver</li>
+                    <li>Callaway 3-wood</li>
+                    <li>Callaway 5-hybrid</li>
+                    <li>Callaway irons (6-9)</li>
+                    <li>Callaway pitching/sand wedge</li>
+                    <li>Callaway putter with SuperStroke grip</li>
+                </ul>
+            </li>
+            <li>Goals for this season
+                <ul>
+                    <li>Break 90 on a full 18-hole round</li>
+                    <li>Improve my short game and putting consistency</li>
+                    <li>Get more consistent with my 3-wood and 5-hybrid</li>
+                    <li>Play at least once a week</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h2>Try It Yourself</h2>
+        <p>Think you've got a steady hand? <a href="puttingpractice.html" target="_blank">Play my Putting Practice game!</a></p>
+
+        <h2 id="video">Watch Golf's Most HYPE Moments</h2>
+        <div class="video-container">
+            <iframe
+                src="https://www.youtube.com/embed/Ot6rwdU84qs?si=I9j7Totyz3CcNxVv"
+                title="YouTube video player"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen>
+            </iframe>
+        </div>
+
+    <h2 id="viz">PGA Tour Player Performance Visualization</h2>
+    <div class='tableauPlaceholder' id='viz1781411270487' style='position: relative'>
+        <noscript>
+            <a href='#'>
+                <img alt='Player Performance'
+                    src='https://public.tableau.com/static/images/PG/PGATOUR_PLAYER_PERFORMANCE_DASHBOARD/PlayerPerformance/1_rss.png'
+                    style='border: none' />
+            </a>
+        </noscript>
+
+        <object class='tableauViz' style='display:none;'>
+            <param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' />
+            <param name='embed_code_version' value='3' />
+            <param name='site_root' value='' />
+            <param name='name' value='PGATOUR_PLAYER_PERFORMANCE_DASHBOARD/PlayerPerformance' />
+            <param name='tabs' value='no' />
+            <param name='toolbar' value='yes' />
+            <param name='static_image' value='https://public.tableau.com/static/images/PG/PGATOUR_PLAYER_PERFORMANCE_DASHBOARD/PlayerPerformance/1.png' />
+            <param name='animate_transition' value='yes' />
+            <param name='display_static_image' value='yes' />
+            <param name='display_spinner' value='yes' />
+            <param name='display_overlay' value='yes' />
+            <param name='display_count' value='yes' />
+            <param name='language' value='en-US' />
+        </object>
+    </div>
+
+    <script>
+        var divElement = document.getElementById('viz1781411270487');
+        var vizElement = divElement.getElementsByTagName('object')[0];
+
+        if (divElement.offsetWidth > 800) {
+            vizElement.style.width = '1100px';
+            vizElement.style.height = '750px';
+        } else if (divElement.offsetWidth > 500) {
+            vizElement.style.width = '900px';
+            vizElement.style.height = '600px';
+        } else {
+            vizElement.style.width = '100%';
+            vizElement.style.height = '700px';
+        }
+
+        var scriptElement = document.createElement('script');
+        scriptElement.src = 'https://public.tableau.com/javascripts/api/viz_v1.js';
+        vizElement.parentNode.insertBefore(scriptElement, vizElement);
+    </script>
+
+    </div>  
+
+    <div class="footer">
+        <p>
+            <a href="index.html">Back to my Resume</a>
+        </p>
+    </div>
+
+</body>
+</html>

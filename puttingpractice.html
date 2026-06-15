@@ -1,0 +1,432 @@
+<!-- Peyton Preator
+ IS 201 WebDev Final Project - AI-Assisted Web App
+ 6/14/2026-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Putting Practice</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Georgia, 'Times New Roman', serif;
+            background-color: #e8e4d4;
+            color: #3d3d3d;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .header {
+            background-color: #6b8e5a;
+            color: #ffffff;
+            padding: 15px 30px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 15px;
+            max-width: 640px;
+        }
+
+        .header h1 {
+            margin: 0 0 5px 0;
+        }
+
+        .header p {
+            margin: 0;
+            font-style: italic;
+        }
+
+        .game-container {
+            background-color: #1c3324;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+        }
+
+        canvas {
+            display: block;
+            border: 4px solid #3d5c3a;
+            border-radius: 6px;
+            cursor: crosshair;
+            background: #4a7c3a;
+            touch-action: none;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin: 10px 2px 0 2px;
+            color: #ffffff;
+            font-size: 16px;
+        }
+
+        .message {
+            min-height: 24px;
+            font-weight: bold;
+            color: #ffd700;
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        .controls {
+            margin-top: 12px;
+            text-align: center;
+        }
+
+        button {
+            background-color: #6b8e5a;
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 15px;
+            font-family: Georgia, 'Times New Roman', serif;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        button:hover {
+            background-color: #557048;
+        }
+
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .footer a {
+            color: #3d3d3d;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Putting Practice</h1>
+        <p>Click (or tap) and drag back from the ball to aim, then release to putt. Watch out for the wind!</p>
+    </div>
+
+    <div class="game-container">
+        <div class="stats">
+            <span id="levelDisplay">Hole 1 / 5</span>
+            <span id="parDisplay">Par: 2</span>
+            <span id="strokesDisplay">Strokes: 0</span>
+            <span id="totalDisplay">Total: 0</span>
+        </div>
+        <canvas id="gameCanvas" width="600" height="400"></canvas>
+        <div class="message" id="message"></div>
+        <div class="controls">
+            <button id="resetBtn">Reset Hole</button>
+            <button id="newGameBtn">New Game</button>
+        </div>
+    </div>
+
+    <div class="footer">
+        <a href="golf.html">Back to my Golf Page</a>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width;
+        const H = canvas.height;
+
+        const BALL_RADIUS = 8;
+        const HOLE_RADIUS = 12;
+        const FRICTION = 0.985;
+        const STOP_THRESHOLD = 0.1;
+        const MAX_DRAG = 150;
+        const POWER_SCALE = 0.05;
+        const MAX_MOVING_FRAMES = 400;
+
+        let framesMoving = 0;
+
+        const levels = [
+            { ball: { x: 80, y: 200 }, hole: { x: 520, y: 200 }, par: 2, wind: { x: 0, y: 0 } },
+            { ball: { x: 60, y: 340 }, hole: { x: 540, y: 60 }, par: 2, wind: { x: 0.00075, y: 0 } },
+            { ball: { x: 40, y: 50 }, hole: { x: 560, y: 350 }, par: 3, wind: { x: 0.001, y: 0.00075 } },
+            { ball: { x: 560, y: 60 }, hole: { x: 40, y: 340 }, par: 3, wind: { x: -0.00125, y: 0.00075 } },
+            { ball: { x: 300, y: 380 }, hole: { x: 300, y: 20 }, par: 4, wind: { x: 0.001, y: -0.001 } }
+        ];
+
+        let currentLevel = 0;
+        let strokes = 0;
+        let totalStrokes = 0;
+        let ball = { x: 0, y: 0, vx: 0, vy: 0 };
+        let isMoving = false;
+        let isDragging = false;
+        let dragStart = { x: 0, y: 0 };
+        let dragCurrent = { x: 0, y: 0 };
+
+        function loadLevel(index) {
+            const lvl = levels[index];
+            ball.x = lvl.ball.x;
+            ball.y = lvl.ball.y;
+            ball.vx = 0;
+            ball.vy = 0;
+            strokes = 0;
+            isMoving = false;
+            updateStats();
+            document.getElementById('message').textContent = '';
+        }
+
+        function updateStats() {
+            document.getElementById('levelDisplay').textContent = `Hole ${currentLevel + 1} / ${levels.length}`;
+            document.getElementById('parDisplay').textContent = `Par: ${levels[currentLevel].par}`;
+            document.getElementById('strokesDisplay').textContent = `Strokes: ${strokes}`;
+            document.getElementById('totalDisplay').textContent = `Total: ${totalStrokes}`;
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+
+            // grass stripes
+            for (let i = 0; i < W; i += 40) {
+                ctx.fillStyle = (i / 40) % 2 === 0 ? '#4a7c3a' : '#477438';
+                ctx.fillRect(i, 0, 40, H);
+            }
+
+            const lvl = levels[currentLevel];
+
+            // hole
+            ctx.beginPath();
+            ctx.arc(lvl.hole.x, lvl.hole.y, HOLE_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fill();
+
+            // flag pole
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(lvl.hole.x, lvl.hole.y);
+            ctx.lineTo(lvl.hole.x, lvl.hole.y - 40);
+            ctx.stroke();
+
+            // flag
+            ctx.fillStyle = '#d9534f';
+            ctx.beginPath();
+            ctx.moveTo(lvl.hole.x, lvl.hole.y - 40);
+            ctx.lineTo(lvl.hole.x + 20, lvl.hole.y - 34);
+            ctx.lineTo(lvl.hole.x, lvl.hole.y - 28);
+            ctx.closePath();
+            ctx.fill();
+
+            // ball
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, BALL_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.strokeStyle = '#888888';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // aim line + power readout
+            if (isDragging) {
+                const dx = dragStart.x - dragCurrent.x;
+                const dy = dragStart.y - dragCurrent.y;
+
+                ctx.beginPath();
+                ctx.moveTo(ball.x, ball.y);
+                ctx.lineTo(ball.x + dx, ball.y + dy);
+                ctx.strokeStyle = '#ffd700';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                const dist = Math.min(Math.sqrt(dx * dx + dy * dy), MAX_DRAG);
+                const power = Math.round((dist / MAX_DRAG) * 100);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '14px Georgia';
+                ctx.fillText(`Power: ${power}%`, ball.x + 12, ball.y - 12);
+            }
+
+            drawWindIndicator(lvl.wind);
+        }
+
+        function drawWindIndicator(wind) {
+            const cx = W - 60;
+            const cy = 30;
+
+            ctx.fillStyle = 'rgba(255,255,255,0.85)';
+            ctx.font = '12px Georgia';
+            ctx.fillText('Wind', cx - 16, cy - 15);
+
+            const mag = Math.sqrt(wind.x * wind.x + wind.y * wind.y);
+            if (mag === 0) {
+                ctx.fillText('Calm', cx - 15, cy + 5);
+                return;
+            }
+
+            const scale = 800;
+            const ex = cx + wind.x * scale;
+            const ey = cy + wind.y * scale;
+
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(ex, ey);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            const angle = Math.atan2(ey - cy, ex - cx);
+            ctx.beginPath();
+            ctx.moveTo(ex, ey);
+            ctx.lineTo(ex - 6 * Math.cos(angle - 0.4), ey - 6 * Math.sin(angle - 0.4));
+            ctx.lineTo(ex - 6 * Math.cos(angle + 0.4), ey - 6 * Math.sin(angle + 0.4));
+            ctx.closePath();
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+        }
+
+        function update() {
+            if (!isMoving) return;
+
+            framesMoving++;
+
+            const lvl = levels[currentLevel];
+
+            ball.vx += lvl.wind.x;
+            ball.vy += lvl.wind.y;
+
+            ball.vx *= FRICTION;
+            ball.vy *= FRICTION;
+
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+
+            const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+
+            const distToHole = Math.sqrt((ball.x - lvl.hole.x) ** 2 + (ball.y - lvl.hole.y) ** 2);
+            if (distToHole < HOLE_RADIUS && speed < 3) {
+                isMoving = false;
+                handleHoleIn();
+                return;
+            }
+
+            if (ball.x < 0 || ball.x > W || ball.y < 0 || ball.y > H) {
+                isMoving = false;
+                handleOutOfBounds();
+                return;
+            }
+
+            if (speed < STOP_THRESHOLD || framesMoving > MAX_MOVING_FRAMES) {
+                ball.vx = 0;
+                ball.vy = 0;
+                isMoving = false;
+            }
+        }
+
+        function handleHoleIn() {
+            totalStrokes += strokes;
+            const lvl = levels[currentLevel];
+            let msg;
+
+            if (strokes === 1) {
+                msg = 'Hole in one! Incredible!';
+            } else if (strokes < lvl.par) {
+                msg = `Birdie! ${strokes} strokes (Par ${lvl.par})`;
+            } else if (strokes === lvl.par) {
+                msg = 'Par! Nice putting.';
+            } else {
+                msg = `In the hole! ${strokes} strokes (Par ${lvl.par})`;
+            }
+
+            document.getElementById('message').textContent = msg;
+            updateStats();
+
+            setTimeout(() => {
+                if (currentLevel < levels.length - 1) {
+                    currentLevel++;
+                    loadLevel(currentLevel);
+                } else {
+                    document.getElementById('message').textContent =
+                        `Course complete! Total strokes: ${totalStrokes}`;
+                }
+            }, 1400);
+        }
+
+        function handleOutOfBounds() {
+            document.getElementById('message').textContent = 'Out of bounds! Try again.';
+            const lvl = levels[currentLevel];
+            ball.x = lvl.ball.x;
+            ball.y = lvl.ball.y;
+            ball.vx = 0;
+            ball.vy = 0;
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function getPos(e, isTouch) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+            const clientY = isTouch ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        function startDrag(pos) {
+            if (isMoving) return;
+            const dist = Math.sqrt((pos.x - ball.x) ** 2 + (pos.y - ball.y) ** 2);
+            if (dist < 30) {
+                isDragging = true;
+                dragStart = { x: pos.x, y: pos.y };
+                dragCurrent = { x: pos.x, y: pos.y };
+            }
+        }
+
+        function moveDrag(pos) {
+            if (!isDragging) return;
+            dragCurrent.x = pos.x;
+            dragCurrent.y = pos.y;
+        }
+
+        function endDrag() {
+            if (!isDragging) return;
+            isDragging = false;
+
+            const dx = dragStart.x - dragCurrent.x;
+            const dy = dragStart.y - dragCurrent.y;
+            const dist = Math.min(Math.sqrt(dx * dx + dy * dy), MAX_DRAG);
+
+            if (dist < 5) return;
+
+            const angle = Math.atan2(dy, dx);
+            const power = dist * POWER_SCALE;
+
+            ball.vx = Math.cos(angle) * power;
+            ball.vy = Math.sin(angle) * power;
+
+            isMoving = true;
+            framesMoving = 0;
+            strokes++;
+            document.getElementById('message').textContent = '';
+            updateStats();
+        }
+
+        canvas.addEventListener('mousedown', (e) => startDrag(getPos(e, false)));
+        document.addEventListener('mousemove', (e) => moveDrag(getPos(e, false)));
+        document.addEventListener('mouseup', endDrag);
+
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDrag(getPos(e, true)); }, { passive: false });
+        document.addEventListener('touchmove', (e) => { if (isDragging) e.preventDefault(); moveDrag(getPos(e, true)); }, { passive: false });
+        document.addEventListener('touchend', endDrag, { passive: false });
+
+        document.getElementById('resetBtn').addEventListener('click', () => loadLevel(currentLevel));
+        document.getElementById('newGameBtn').addEventListener('click', () => {
+            currentLevel = 0;
+            totalStrokes = 0;
+            loadLevel(0);
+        });
+
+        loadLevel(0);
+        gameLoop();
+    </script>
+
+</body>
+</html>
